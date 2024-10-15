@@ -1,0 +1,18 @@
+networks:
+  alecs:
+    name: alecs_network
+
+services:
+  ############################
+  # Postgres DB
+  ############################
+  dbpostgres: # container name
+    image: postgres-alecs-img
+    env_file:
+      - ./env-database.properties
+    networks:
+      - alecs
+    build:
+      context: ./Db
+    ports:
+      - "5432:5432"
