@@ -14,5 +14,5 @@ com:
   alecs:
     controllocircolariscuola:
       telegram:
-        chat-id: -4598715350
+        chat-id: -4500448339
         token: ${ALECS_TELEGRAM_BOT_TOKEN}

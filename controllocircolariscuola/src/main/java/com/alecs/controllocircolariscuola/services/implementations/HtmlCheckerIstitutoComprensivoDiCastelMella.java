@@ -51,22 +51,23 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
         }
         
         LocalDate today = LocalDate.now();
-        var circolareMemorizzata = circolariMemorizzate.get(today);
-        
-        if(circolareMemorizzata == null) {
-            var nuovaCircolare = new Circolare();
-            nuovaCircolare.setDate(today);
+        var circolareMemorizzata = circolariMemorizzate.compute(today, (k,v) -> {
+            var nuovaCircolare = v == null ? new Circolare() : v ;
+            nuovaCircolare.setDate(k);
             nuovaCircolare.setNumeroCircolari(count);
-            circolariMemorizzate.put(today, nuovaCircolare);
-            circolareMemorizzata = nuovaCircolare;
-        }
+            return nuovaCircolare;
+        });
         
         if(circolareMemorizzata.getNumeroCircolari() != count) {
             circolareMemorizzata.setNotificaInviata(false);
         }
         
         if(!circolareMemorizzata.isNotificaInviata()) {
-            return this.sendNotification("Nuova circolare disponibile");
+            return this.sendNotification("Nuova circolare disponibile")
+                    .map(result -> {
+                        circolareMemorizzata.setNotificaInviata(result);
+                        return result;
+                    });
         }
         
         return Mono.just(true);
