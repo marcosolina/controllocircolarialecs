@@ -6,13 +6,13 @@ services:
   ############################
   # Postgres DB
   ############################
-  dbpostgres: # container name
-    image: postgres-alecs-img
+  springapp: # container name
+    image: controllo-circolari
     env_file:
-      - ./env-database.properties
+      - ./env-variables.properties
     networks:
       - alecs
     build:
-      context: ./Db
+      context: ./SpringBootApp
     ports:
-      - "5432:5432"
+      - "8080:8080"

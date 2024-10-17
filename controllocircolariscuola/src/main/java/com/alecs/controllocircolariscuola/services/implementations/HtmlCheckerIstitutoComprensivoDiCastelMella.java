@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.alecs.controllocircolariscuola.models.svc.Circolare;
@@ -20,7 +21,6 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
 
-import jakarta.annotation.PostConstruct;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -29,16 +29,15 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
     private static final Map<LocalDate, Circolare> circolariMemorizzate = new HashMap<LocalDate, Circolare>();
     private SendNotification notification;
     private static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ITALIAN);
-    
+
     private static URI uri = URI.create("https://iccastelmella.edu.it/le-circolari");
 
     public HtmlCheckerIstitutoComprensivoDiCastelMella(SendNotification notification) {
         this.notification = notification;
     }
 
-    @PostConstruct
+    @Scheduled(cron = "0 * * * * *") // Every minute
     public void init() throws IOException {
-        // this.checkForHtmlChanges().subscribe(b -> _LOGGER.debug(b.toString()));
         checkForNewNotifications().subscribe();
     }
 
@@ -81,21 +80,22 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
 
     private int getTodaysCount() {
         try (Playwright playwright = Playwright.create()) {
-            //Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false).setSlowMo(50));
+            // Browser browser = playwright.chromium().launch(new
+            // BrowserType.LaunchOptions().setHeadless(false).setSlowMo(50));
             Browser browser = playwright.chromium().launch();
             Page page = browser.newPage();
             page.navigate(uri.toString());
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Accetta Tutto")).click();
             LocalDate date = LocalDate.now();
             String formattedDate = date.format(dateFormatter);
-            
+
             return page.getByText(String.format("Pubblicato: %s", formattedDate)).count();
-            
-        }catch(Exception e) {
+
+        } catch (Exception e) {
             _LOGGER.error(e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
 }
