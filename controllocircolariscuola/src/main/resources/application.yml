@@ -1,3 +1,18 @@
 spring:
     application:
         name: controllocircolariscuola
+
+logging:
+  level:
+    root: INFO
+    reactor:
+      Flux: OFF
+    com:
+      alecs: DEBUG
+
+com:
+  alecs:
+    controllocircolariscuola:
+      telegram:
+        chat-id: -4598715350
+        token: ${ALECS_TELEGRAM_BOT_TOKEN}
