@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class TelegramProperties {
     private String token;
     private String chatId;
+    private boolean disabled;
 
     public String getToken() {
         return token;
@@ -25,4 +26,13 @@ public class TelegramProperties {
         this.chatId = chatId;
     }
 
+    public boolean isDisabled() {
+        return disabled;
+    }
+
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+    }
+
+    
 }
