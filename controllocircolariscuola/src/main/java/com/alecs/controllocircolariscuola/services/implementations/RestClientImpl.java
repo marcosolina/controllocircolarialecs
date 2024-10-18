@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.reactive.function.BodyInserters.FormInserter;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.Builder;
@@ -50,7 +51,7 @@ public class RestClientImpl implements RestClientUtils {
         /*
          * Create the request and adds query parameters if provided
          */
-        RequestBodySpec rbs = getRequestBodySpec(method, url, headers, queryParameters, contentType);
+        RequestBodySpec rbs = getRequestBodySpec(method, url, headers, queryParameters).contentType(contentType.orElse(MediaType.APPLICATION_JSON));
 
         /*
          * Perform the call
@@ -59,6 +60,23 @@ public class RestClientImpl implements RestClientUtils {
             rbs.bodyValue(body.get());
         }
         
+        return this.sendRequest(responseBodyClass, rbs);
+    }
+    
+    @Override
+    public <T, J> Mono<ResponseEntity<T>> performRequestNoExceptions(Class<T> responseBodyClass, HttpMethod method,
+            URL url, Optional<Map<String, String>> headers, Optional<Map<String, String>> queryParameters,
+            Optional<FormInserter<J>> body) {
+        RequestBodySpec rbs = getRequestBodySpec(method, url, headers, queryParameters);
+        
+        if (body.isPresent()) {
+            rbs.body(body.get());
+        }
+        
+        return this.sendRequest(responseBodyClass, rbs);
+    }
+    
+    private <T> Mono<ResponseEntity<T>> sendRequest(Class<T> responseBodyClass, RequestBodySpec rbs){
         return rbs.exchangeToMono(response -> {
             
             if (response.statusCode().is4xxClientError() || response.statusCode().is5xxServerError()) {
@@ -86,8 +104,7 @@ public class RestClientImpl implements RestClientUtils {
             HttpMethod method,
             URL url,
             Optional<Map<String, String>> headers,
-            Optional<Map<String, String>> queryParameters,
-            Optional<MediaType> contentType) {
+            Optional<Map<String, String>> queryParameters) {
     // @formatter:on
         /*
          * Create the request and adds query parameters if provided
@@ -103,7 +120,7 @@ public class RestClientImpl implements RestClientUtils {
             _LOGGER.debug(String.format("Http request to: %s", uri.toString()));
             return uri;
 
-        }).contentType(contentType.orElse(MediaType.APPLICATION_JSON));
+        });
 
         /*
          * Add HTTP headers if provided
@@ -116,5 +133,4 @@ public class RestClientImpl implements RestClientUtils {
 
         return rbs;
     }
-
 }

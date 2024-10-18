@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.reactive.function.BodyInserters.FormInserter;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Mono;
@@ -32,4 +33,7 @@ public WebClient.Builder getWebBuilder();
      */
     public <T> Mono<ResponseEntity<T>> performRequestNoExceptions(Class<T> responseBodyClass, HttpMethod method, URL url, Optional<Map<String, String>> headers, Optional<Map<String, String>> queryParameters, Optional<MediaType> contentType,
             Optional<? extends Serializable> body);
+    
+    public <T,J> Mono<ResponseEntity<T>> performRequestNoExceptions(Class<T> responseBodyClass, HttpMethod method, URL url, Optional<Map<String, String>> headers, Optional<Map<String, String>> queryParameters, 
+            Optional<FormInserter<J>> body);
 }

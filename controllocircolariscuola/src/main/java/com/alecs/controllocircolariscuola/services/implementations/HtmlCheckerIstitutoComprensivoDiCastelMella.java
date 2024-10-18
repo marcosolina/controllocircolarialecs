@@ -2,11 +2,14 @@ package com.alecs.controllocircolariscuola.services.implementations;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +25,8 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
 
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 @Service
 public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker {
@@ -35,17 +40,25 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
     public HtmlCheckerIstitutoComprensivoDiCastelMella(SendNotification notification) {
         this.notification = notification;
     }
-
+    
     @Scheduled(cron = "0 * * * * *") // Every minute
     public void init() throws IOException {
         checkForNewNotifications().subscribe();
+        LocalDate today = LocalDate.now();
+        circolariMemorizzate.keySet().forEach(k -> {
+            if(k.isBefore(today)) {
+                _LOGGER.debug("Removing notifications with key: " + k);
+                circolariMemorizzate.remove(k);
+            }
+        });
     }
 
     @Override
     public Mono<Boolean> checkForNewNotifications() {
         // @formatter:off
-        
-        int count = this.getTodaysCount();
+        var tuple = this.getTodaysCountAndScreenshot();
+        int count = tuple.getT1();
+        var screenshot = tuple.getT2();
         if(count == 0) {
             return Mono.just(true);
         }
@@ -63,7 +76,7 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
         }
         
         if(!circolareMemorizzata.isNotificaInviata()) {
-            return this.sendNotification("Nuova circolare disponibile")
+            return this.sendNotification("Nuova circolare disponibile", Optional.ofNullable(screenshot))
                     .map(result -> {
                         circolareMemorizzata.setNotificaInviata(result);
                         return result;
@@ -75,11 +88,12 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
     }
 
     @Override
-    public Mono<Boolean> sendNotification(String message) {
-        return this.notification.sendNotification(message);
+    public Mono<Boolean> sendNotification(String message, Optional<Path> screenshot) {
+        return this.notification.sendNotification(message, screenshot);
     }
 
-    private int getTodaysCount() {
+    private Tuple2<Integer, Path> getTodaysCountAndScreenshot() {
+        var screenshotPath = Paths.get("example.png");
         try (Playwright playwright = Playwright.create()) {
             // Browser browser = playwright.chromium().launch(new
             // BrowserType.LaunchOptions().setHeadless(false).setSlowMo(50));
@@ -89,14 +103,15 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Accetta Tutto")).click();
             LocalDate date = LocalDate.now();
             String formattedDate = date.format(dateFormatter);
-
-            return page.getByText(String.format("Pubblicato: %s", formattedDate)).count();
+            page.screenshot(new Page.ScreenshotOptions().setPath(screenshotPath));
+            int count = page.getByText(String.format("Pubblicato: %s", formattedDate)).count(); 
+            return Tuples.of(count, screenshotPath);
 
         } catch (Exception e) {
             _LOGGER.error(e.getMessage());
             e.printStackTrace();
         }
 
-        return 0;
+        return Tuples.of(0, null);
     }
 }
