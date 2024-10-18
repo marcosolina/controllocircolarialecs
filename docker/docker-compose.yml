@@ -6,7 +6,7 @@ services:
   ############################
   # Postgres DB
   ############################
-  springapp: # container name
+  alecontrollocircolari: # container name
     image: controllo-circolari
     env_file:
       - ./env-variables.properties
@@ -14,5 +14,3 @@ services:
       - alecs
     build:
       context: ./SpringBootApp
-    ports:
-      - "8080:8080"
