@@ -15,6 +15,6 @@ imageName="controllo-circolari"
 #    docker image rm $imageName
 #fi
 
-docker system prune -a --volumes
+docker system prune -a --volumes -f
 
 docker-compose -f $composeFile up -d
