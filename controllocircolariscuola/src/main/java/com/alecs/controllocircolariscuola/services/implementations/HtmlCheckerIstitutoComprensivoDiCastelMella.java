@@ -127,7 +127,7 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
             Page page = browser.newPage();
             openThePageAndAcceptCookies(page, screenshotPath);
 
-            LocalDate date = LocalDate.now().minusDays(1);
+            LocalDate date = LocalDate.now();
             String formattedDate = date.format(_DATE_FORMATTER);
 
             int count = page.getByText(String.format("%s %s", _PREFIX, formattedDate)).count();
