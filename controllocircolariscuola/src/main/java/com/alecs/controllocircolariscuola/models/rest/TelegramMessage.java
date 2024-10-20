@@ -12,6 +12,8 @@ public class TelegramMessage implements Serializable{
     private String chatId;
     @JsonProperty("text")
     private String text;
+    @JsonProperty("parse_mode")
+    private String parseMode = "markdown";
 
     public String getChatId() {
         return chatId;
@@ -27,6 +29,18 @@ public class TelegramMessage implements Serializable{
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public String getParseMode() {
+        return parseMode;
+    }
+
+    public void setParseMode(String parseMode) {
+        this.parseMode = parseMode;
+    }
+
+    public static long getSerialversionuid() {
+        return serialVersionUID;
     }
 
 }
