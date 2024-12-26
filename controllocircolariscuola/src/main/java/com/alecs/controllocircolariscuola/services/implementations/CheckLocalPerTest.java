@@ -14,42 +14,36 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 import com.alecs.controllocircolariscuola.models.svc.Circolare;
 import com.alecs.controllocircolariscuola.services.interfaces.HtmlChecker;
-import com.alecs.controllocircolariscuola.services.interfaces.SendNotification;
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.options.AriaRole;
 
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuples;
 
-@Service
-public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker {
-    private static final Logger _LOGGER = LoggerFactory.getLogger(HtmlCheckerIstitutoComprensivoDiCastelMella.class);
+public class CheckLocalPerTest implements HtmlChecker {
+    private static final Logger _LOGGER = LoggerFactory.getLogger(CheckLocalPerTest.class);
     private static final Map<LocalDate, Circolare> _CIRCOLARI_MEMORIZZATE = new HashMap<LocalDate, Circolare>();
     private static DateTimeFormatter _DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ITALIAN);
     private static boolean _UI_CHANGED_NOTIFICATION_SENT = false;
     private static String _PREFIX = "Pubblicato:";
-    private static URI _URI_TO_CHECK = URI.create("https://iccastelmella.edu.it/le-circolari");
+    private static URI _URI_TO_CHECK = URI.create("https://marco.selfip.net/circolarialetest");
+    
+    private static LocalDate dataDiTest = LocalDate.of(2024, 12, 4);
 
-    private SendNotification notification;
 
-    public HtmlCheckerIstitutoComprensivoDiCastelMella(SendNotification notification) {
-        this.notification = notification;
-    }
-
-    @Scheduled(cron = "0 */5 * * * *") // Every 5 minutes
+    @Scheduled(cron = "0 * * * * *") // every minute
     //@PostConstruct
     public void init() throws IOException {
         checkForNewNotifications().subscribe(b -> {
-            LocalDate today = LocalDate.now();
-            _CIRCOLARI_MEMORIZZATE.keySet().forEach(k -> {
-                if (k.isBefore(today)) {
+            var keys = _CIRCOLARI_MEMORIZZATE.keySet();
+            keys.forEach(k -> {
+                if (k.isBefore(dataDiTest)) {
                     _LOGGER.debug("Removing notifications with key: " + k);
                     _CIRCOLARI_MEMORIZZATE.remove(k);
                 }
@@ -76,8 +70,7 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
             return Mono.just(true);
         }
         
-        LocalDate today = LocalDate.now();
-        var circolareMemorizzata = _CIRCOLARI_MEMORIZZATE.compute(today, (k,v) -> {
+        var circolareMemorizzata = _CIRCOLARI_MEMORIZZATE.compute(dataDiTest, (k,v) -> {
             if(v != null) {
                 return v;
             }
@@ -109,7 +102,8 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
 
     @Override
     public Mono<Boolean> sendNotification(String message, Optional<Path> screenshot) {
-        return this.notification.sendNotification(message, screenshot);
+        _LOGGER.info(message);
+        return Mono.just(true);
     }
     
     private Mono<Boolean> sendUrl(String url){
@@ -123,15 +117,15 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
     private Tuple4<Integer, Path, Boolean, String> getTodaysCountAndScreenshot() {
         var screenshotPath = Paths.get("PAGINA_WEB.png");
         try (Playwright playwright = Playwright.create()) {
-            // Browser browser = playwright.chromium().launch(new
-            // BrowserType.LaunchOptions().setHeadless(false).setSlowMo(50));
-            Browser browser = playwright.chromium().launch();
+            Browser browser = playwright.chromium().launch(new
+            BrowserType.LaunchOptions().setHeadless(false).setSlowMo(50));
+            //Browser browser = playwright.chromium().launch();
 
             Page page = browser.newPage();
             openThePageAndAcceptCookies(page, screenshotPath);
 
-            LocalDate date = LocalDate.now();
-            String formattedDate = date.format(_DATE_FORMATTER);
+            
+            String formattedDate = dataDiTest.format(_DATE_FORMATTER);
 
             int count = page.getByText(String.format("%s %s", _PREFIX, formattedDate)).count();
             boolean uiChanged = page.getByText(_PREFIX).count() == 0;
@@ -149,7 +143,7 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
 
     private void openThePageAndAcceptCookies(Page page, Path screenshotPath) {
         page.navigate(_URI_TO_CHECK.toString());
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Accetta Tutto")).click();
+        //page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Accetta Tutto")).click();
         page.screenshot(new Page.ScreenshotOptions().setPath(screenshotPath));
     }
     
