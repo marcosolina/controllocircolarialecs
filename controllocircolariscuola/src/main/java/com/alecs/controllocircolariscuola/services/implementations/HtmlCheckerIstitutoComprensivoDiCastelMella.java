@@ -60,11 +60,12 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
     @Override
     public Mono<Boolean> checkForNewNotifications() {
         // @formatter:off
-        var tuple = this.getTodaysCountAndScreenshot();
+        var tuple = this.getTodaysNotifications();
         int count = tuple.getT1();
         var screenshot = tuple.getT2();
         var uiChanged = tuple.getT3();
         var urlUltimaCircolare = tuple.getT4();
+        
         if(count == 0) {
             if(uiChanged && !_UI_CHANGED_NOTIFICATION_SENT) {
                 return this.sendNotification("Hanno cambiato la schermata", Optional.ofNullable(screenshot))
@@ -77,7 +78,7 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
         }
         
         LocalDate today = LocalDate.now();
-        var circolareMemorizzata = _CIRCOLARI_MEMORIZZATE.compute(today, (k,v) -> {
+        var ultimaCircolareMemorizzata = _CIRCOLARI_MEMORIZZATE.compute(today, (k,v) -> {
             if(v != null) {
                 return v;
             }
@@ -87,15 +88,15 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
             return nuovaCircolare;
         });
         
-        if(circolareMemorizzata.getNumeroCircolari() != count) {
-            circolareMemorizzata.setNotificaInviata(false);
+        if(ultimaCircolareMemorizzata.getNumeroCircolari() != count) {
+            ultimaCircolareMemorizzata.setNotificaInviata(false);
         }
         
-        if(!circolareMemorizzata.isNotificaInviata()) {
+        if(!ultimaCircolareMemorizzata.isNotificaInviata()) {
             return this.sendNotification("Nuova circolare disponibile", Optional.ofNullable(screenshot))
                     .map(result -> {
                         _UI_CHANGED_NOTIFICATION_SENT = false;
-                        circolareMemorizzata.setNotificaInviata(result);
+                        ultimaCircolareMemorizzata.setNotificaInviata(result);
                         return result;
                     })
                     .flatMap(result -> sendUrl(urlUltimaCircolare));
@@ -120,7 +121,7 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
         return Mono.just(true);
     }
 
-    private Tuple4<Integer, Path, Boolean, String> getTodaysCountAndScreenshot() {
+    private Tuple4<Integer, Path, Boolean, String> getTodaysNotifications() {
         var screenshotPath = Paths.get("PAGINA_WEB.png");
         try (Playwright playwright = Playwright.create()) {
             // Browser browser = playwright.chromium().launch(new
@@ -133,11 +134,11 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
             LocalDate date = LocalDate.now();
             String formattedDate = date.format(_DATE_FORMATTER);
 
-            int count = page.getByText(String.format("%s %s", _PREFIX, formattedDate)).count();
+            int todayNotificationsCount = page.getByText(String.format("%s %s", _PREFIX, formattedDate)).count();
             boolean uiChanged = page.getByText(_PREFIX).count() == 0;
             String link = this.estraiLink(page);
 
-            return Tuples.of(count, screenshotPath, uiChanged, link);
+            return Tuples.of(todayNotificationsCount, screenshotPath, uiChanged, link);
 
         } catch (Exception e) {
             _LOGGER.error(e.getMessage());
