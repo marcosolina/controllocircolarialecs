@@ -37,7 +37,7 @@ public class TelegramNotifications implements SendNotification {
     public Mono<Boolean> sendNotification(String message, Optional<Path> screenshot) {
         _LOGGER.debug("Sending telegram text: " + message);
 
-        if(props.isDisabled() || true) {
+        if(props.isDisabled()) {
             _LOGGER.debug("Telegram disabled");
             return Mono.just(true);
         }

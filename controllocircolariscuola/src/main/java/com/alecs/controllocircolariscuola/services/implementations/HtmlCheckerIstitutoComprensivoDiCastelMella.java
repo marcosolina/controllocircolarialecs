@@ -123,6 +123,7 @@ public class HtmlCheckerIstitutoComprensivoDiCastelMella implements HtmlChecker 
 
     private Tuple4<Integer, Path, Boolean, String> getTodaysNotifications() {
         var screenshotPath = Paths.get("PAGINA_WEB.png");
+        _LOGGER.debug("Checking for circolare");
         try (Playwright playwright = Playwright.create()) {
             // Browser browser = playwright.chromium().launch(new
             // BrowserType.LaunchOptions().setHeadless(false).setSlowMo(50));
